@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Splitter</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        label, input, textarea { margin: 5px 0; display: block; width: 100%; }
+        button { margin-top: 10px; }
+        .result { margin-top: 20px; padding: 10px; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <h2>Expense Splitter</h2>
+    <label for="a">Expenses of A (comma-separated):</label>
+    <textarea id="a" placeholder="e.g., 100,50,30"></textarea>
+
+    <label for="b">Expenses of B (comma-separated):</label>
+    <textarea id="b" placeholder="e.g., 200,80"></textarea>
+
+    <label for="c">Expenses of C (comma-separated):</label>
+    <textarea id="c" placeholder="e.g., 150,70,30"></textarea>
+
+    <button onclick="calculatePending()">Calculate</button>
+    <div class="result" id="result"></div>
+
+    <script>
+        function sumExpenses(input) {
+            return input.split(',').map(Number).filter(val => !isNaN(val)).reduce((sum, val) => sum + val, 0);
+        }
+
+        function calculatePending() {
+            const a = sumExpenses(document.getElementById('a').value);
+            const b = sumExpenses(document.getElementById('b').value);
+            const c = sumExpenses(document.getElementById('c').value);
+            const amounts = [a, b, c];
+
+            const total = amounts.reduce((sum, val) => sum + val, 0);
+            const equalShare = total / 3;
+            const pending = amounts.map(val => equalShare - val);
+
+            let settlement = '';
+            const names = ['A', 'B', 'C'];
+            let oweList = [], receiveList = [];
+
+            for (let i = 0; i < 3; i++) {
+                if (pending[i] > 0) oweList.push({ name: names[i], amount: pending[i] });
+                else if (pending[i] < 0) receiveList.push({ name: names[i], amount: -pending[i] });
+            }
+
+            oweList.sort((x, y) => x.amount - y.amount);
+            receiveList.sort((x, y) => y.amount - x.amount);
+
+            let i = 0, j = 0;
+            while (i < oweList.length && j < receiveList.length) {
+                const minAmount = Math.min(oweList[i].amount, receiveList[j].amount);
+                settlement += `${oweList[i].name} should pay ${receiveList[j].name} ₹${minAmount.toFixed(2)}<br>`;
+                oweList[i].amount -= minAmount;
+                receiveList[j].amount -= minAmount;
+
+                if (oweList[i].amount === 0) i++;
+                if (receiveList[j].amount === 0) j++;
+            }
+
+            document.getElementById('result').innerHTML = `
+                <strong>Total Expense:</strong> ${total.toFixed(2)}<br>
+                <strong>Equal Share:</strong> ${equalShare.toFixed(2)}<br><br>
+                <strong>Total contributions:</strong><br>
+                A: ${a.toFixed(2)}<br>
+                B: ${b.toFixed(2)}<br>
+                C: ${c.toFixed(2)}<br><br>
+                <strong>Pending amounts:</strong><br>
+                A: ${pending[0].toFixed(2)}<br>
+                B: ${pending[1].toFixed(2)}<br>
+                C: ${pending[2].toFixed(2)}<br><br>
+                <strong>Settlement Suggestions:</strong><br>
+                ${settlement || 'No settlements needed'}
+            `;
+        }
+    </script>
+</body>
+</html>
